@@ -1,0 +1,91 @@
+image:
+  name: docker/compose:1.25.4
+  entrypoint: [""]
+
+services:
+  - docker:dind
+
+stages:
+  - lint
+  - build
+  - test
+
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_DRIVER: overlay2
+  POSTGRES_USER: 'alumni'
+  POSTGRES_PASSWORD: ''
+  POSTGRES_DB: 'test_alumni'
+  POSTGRES_HOST_AUTH_METHOD: trust
+  CELERY_BROKER_URL: 'redis://redis:6379/0'
+
+flake8:
+  stage: lint
+  image: python:3.7-alpine
+  before_script:
+    - pip install -q flake8
+  script:
+    - flake8
+
+before_script:
+  - export IMAGE=$CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME
+  - export REDIS_IMAGE=$IMAGE:redis
+  - export DOCS_IMAGE=$IMAGE:docs
+  - export DJANGO_IMAGE=$IMAGE:django
+  - export POSTGRES_IMAGE=$IMAGE:postgres
+  - export FLOWER_IMAGE=$IMAGE:flower
+  - export CELERYWORKER_IMAGE=$IMAGE:celeryworker
+  - export CELERYBEAT_IMAGE=$IMAGE:celerybeat
+  - apk add --no-cache openssh-client bash
+  - chmod +x ./setup_env.sh
+  - bash ./setup_env.sh
+  - docker login -u $CI_DOCKER_DEPLOY_USER -p $CI_DOCKER_DEPLOY_KEY $CI_REGISTRY
+
+build:
+  stage: build
+  script:
+    - docker pull $IMAGE:redis || true
+    - docker pull $IMAGE:docs || true
+    - docker pull $IMAGE:django || true
+    - docker pull $IMAGE:postgres || true
+    - docker pull $IMAGE:flower || true
+    - docker pull $IMAGE:celeryworker || true
+    - docker pull $IMAGE:celerybeat || true
+    - docker-compose -f gitlab-local.yml build
+    - docker images
+    - docker push $IMAGE:docs
+    - docker push $IMAGE:django
+    - docker push $IMAGE:postgres
+    - docker push $IMAGE:flower
+    - docker push $IMAGE:celeryworker
+    - docker push $IMAGE:celerybeat
+#    - docker push $IMAGE:redis
+
+pytest:
+  stage: test
+  image: python:3.7
+  image: docker/compose:latest
+  tags:
+    - docker
+  services:
+    - docker:dind
+  before_script:
+    - export IMAGE=$CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME
+    - export REDIS_IMAGE=$IMAGE:redis
+    - export DOCS_IMAGE=$IMAGE:docs
+    - export DJANGO_IMAGE=$IMAGE:django
+    - export POSTGRES_IMAGE=$IMAGE:postgres
+    - export FLOWER_IMAGE=$IMAGE:flower
+    - export CELERYWORKER_IMAGE=$IMAGE:celeryworker
+    - export CELERYBEAT_IMAGE=$IMAGE:celerybeat
+    - apk add --no-cache openssh-client bash
+    - chmod +x ./setup_env.sh
+    - bash ./setup_env.sh
+    - docker-compose -f gitlab-local.yml build
+    - docker images
+    # Ensure celerybeat does not crash due to non-existent tables
+    - docker-compose -f gitlab-local.yml run --rm django python manage.py migrate
+    - docker-compose -f gitlab-local.yml up -d
+    - docker images
+  script:
+    - docker-compose -f gitlab-local.yml run django pytest

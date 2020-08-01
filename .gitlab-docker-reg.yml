@@ -1,0 +1,73 @@
+image:
+  name: docker/compose:1.25.4
+  entrypoint: [""]
+
+services:
+  - docker:dind
+
+stages:
+  - build
+  - deploy
+
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_DRIVER: overlay2
+  POSTGRES_USER: 'alumni'
+  POSTGRES_PASSWORD: ''
+  POSTGRES_DB: 'test_alumni'
+  POSTGRES_HOST_AUTH_METHOD: trust
+  CELERY_BROKER_URL: 'redis://redis:6379/0'
+
+
+before_script:
+  - export IMAGE=$CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME
+  - export REDIS_IMAGE=$IMAGE:redis
+  - export DOCS_IMAGE=$IMAGE:docs
+  - export DJANGO_IMAGE=$IMAGE:django
+  - export POSTGRES_IMAGE=$IMAGE:postgres
+  - export FLOWER_IMAGE=$IMAGE:flower
+  - export CELERYWORKER_IMAGE=$IMAGE:celeryworker
+  - export CELERYBEAT_IMAGE=$IMAGE:celerybeat
+  - export TRAEFIK_IMAGE=$IMAGE:traefik
+  - mkdir ./.envs/.production/
+  - apk add --no-cache openssh-client bash
+  - chmod +x ./setup_env.sh
+  - bash ./setup_env.sh
+  - docker login -u $CI_DOCKER_DEPLOY_USER -p $CI_DOCKER_DEPLOY_KEY $CI_REGISTRY
+
+build:
+  stage: build
+  script:
+    - docker pull $IMAGE:redis || true
+    - docker pull $IMAGE:docs || true
+    - docker pull $IMAGE:django || true
+    - docker pull $IMAGE:postgres || true
+    - docker pull $IMAGE:flower || true
+    - docker pull $IMAGE:celeryworker || true
+    - docker pull $IMAGE:celerybeat || true
+    - docker pull $IMAGE:traefik || true
+    - docker-compose -f gitlab-production.yml build
+    - docker images
+    - docker push $IMAGE:docs
+    - docker push $IMAGE:django
+    - docker push $IMAGE:postgres
+    - docker push $IMAGE:flower
+    - docker push $IMAGE:celeryworker
+    - docker push $IMAGE:celerybeat
+    - docker push $IMAGE:traefik || true
+#    - docker push $IMAGE:redis
+
+deploy:
+  stage: deploy
+  script:
+    - mkdir -p ~/.ssh
+    - cp $TEST_KEY ~/.ssh/id_rsa
+    - chmod 700 ~/.ssh/id_rsa
+    - eval "$(ssh-agent -s)"
+    - ssh-add ~/.ssh/id_rsa
+    - ssh-keyscan -H 'gitlab.com' >> ~/.ssh/known_hosts
+    - chmod +x ./gitlab-deploy.sh
+    - scp  -o StrictHostKeyChecking=no -r ./.envs ./compose ./gitlab-production.yml $CONNECT_DEPLOY_INSTANCE:$WORK_DIR
+    - bash ./gitlab-deploy.sh
+  only:
+    - master
