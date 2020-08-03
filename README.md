@@ -2,7 +2,7 @@
 
 http://community.alumni-portal.ml/
 https://alumni-portal.ml/BpmfdqRd1ld5IUlzzPEFqnfTCi8SE8HE/
-http://connect.alumni-portal.ml/
+http://connect.alumni-portal.ml/admin
 
 access : admin
 password:12345
