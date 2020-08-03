@@ -1,10 +1,9 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class TokenStorage {
-  final storage = FlutterSecureStorage();
-  readToken() async {
-    var accessToken = await storage.read(key: 'accesstoken');
-    print('this is$accessToken');
-    // String refreshToken = await storage.read(key: 'refreshtoken');
+class SharedStorage {
+  removePreferences() async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    await sharedPreferences.remove('course');
+    await sharedPreferences.remove('collegeId');
   }
 }

@@ -1,4 +1,3 @@
-import 'package:alumni/UI/screens/Registration/signup.dart';
 import 'package:alumni/UI/screens/Welcome_Screen/welcome_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -13,7 +12,7 @@ class MyApp extends StatelessWidget {
       title: 'Alumni App',
       theme: ThemeData(primarySwatch: Colors.blue),
       debugShowCheckedModeBanner: false,
-      home: SignUpForm(),
+      home: HomePage(),
     );
   }
 }

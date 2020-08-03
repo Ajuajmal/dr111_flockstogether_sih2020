@@ -1,4 +1,6 @@
+import 'package:alumni/UI/Componants/bottombar.dart';
 import 'package:alumni/UI/screens/Registration/college_selection.dart';
+import 'package:alumni/UI/screens/filters/filters.dart';
 import 'package:alumni/utilitis/constants/api_urls.dart';
 import 'package:flutter/material.dart';
 import 'package:alumni/UI/screens/Login/login.dart';
@@ -36,6 +38,10 @@ class _HomePageState extends State<HomePage> {
           _isLoading = false;
         },
       );
+      Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => BottomBarHome()),
+          (route) => false);
     }
 
     checkLoginStatus() async {

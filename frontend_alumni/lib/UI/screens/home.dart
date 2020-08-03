@@ -185,20 +185,10 @@ class _HomeState extends State<Home> {
           child: Column(
             children: <Widget>[
               Container(
-                width: 380,
-                height: 150,
                 padding: EdgeInsets.fromLTRB(20, 30, 20, 20),
-                color: Colors.blue[300],
                 child: Center(
-                  child: Text(
-                    'CUCEK',
-                    style: TextStyle(
-                      letterSpacing: 3,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 30,
-                      fontFamily: 'OpenSans',
-                    ),
+                  child: Image.asset(
+                    'assets/images/college_home.jpg',
                   ),
                 ),
               ),

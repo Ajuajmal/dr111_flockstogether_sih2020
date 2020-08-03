@@ -1,12 +1,14 @@
 import 'package:alumni/UI/screens/Welcome_Screen/welcome_screen.dart';
+import 'package:alumni/services/storage.dart';
 import 'package:flutter/material.dart';
 import 'package:alumni/UI/screens/Login/login.dart';
 import 'package:form_field_validator/form_field_validator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:rflutter_alert/rflutter_alert.dart';
 import 'package:flutter_icons/flutter_icons.dart';
-import './newbatch.dart';
+import 'package:alumni/utilitis/constants/api_urls.dart';
 
 class SignUpForm extends StatefulWidget {
   @override
@@ -16,7 +18,7 @@ class SignUpForm extends StatefulWidget {
 class _SignUpFormState extends State<SignUpForm> {
   bool _isLoading = false;
   String selBatch;
-  String selDept;
+
   final emailController = new TextEditingController();
   final usernameController = new TextEditingController();
   final firstnameController = new TextEditingController();
@@ -103,30 +105,19 @@ class _SignUpFormState extends State<SignUpForm> {
       return null;
   }
 
-  final String batchApi =
-      'https://www.alumni-cucek.ml/api/auth/account/get/batches/';
-
-  final String deptApi =
-      'https://www.alumni-cucek.ml/api/auth/account/get/departments/';
-
   List data = List();
-  List deptData = List();
+
   Future<String> getBatchApi() async {
-    var res = await http.get(batchApi);
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    var courseId = sharedPreferences.getString('course');
+    print(courseId);
+    var res = await http.get(
+        ApiUrl.baseUrl + ApiUrl.endPoint + ApiUrl.batchList + courseId + '/');
     var resBody = json.decode(res.body);
+    print(resBody);
     setState(() {
       data = resBody;
     });
-    return "Sucess";
-  }
-
-  Future<String> getDeptApi() async {
-    var res = await http.get(deptApi);
-    var resBody = json.decode(res.body);
-    setState(() {
-      deptData = resBody;
-    });
-
     return "Sucess";
   }
 
@@ -134,7 +125,6 @@ class _SignUpFormState extends State<SignUpForm> {
   void initState() {
     super.initState();
     this.getBatchApi();
-    this.getDeptApi();
   }
 
   @override
@@ -143,25 +133,38 @@ class _SignUpFormState extends State<SignUpForm> {
   }
 
   signUp(String email, String username, String fn, String ln, String password,
-      String dept, int batch, String contact) async {
+      int batch, String contact) async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    var course = sharedPreferences.getString('course');
+    var collegeId = sharedPreferences.getString('collegeId');
+
     Map data = {
       'email': email,
       'username': username,
       'first_name': fn,
       'last_name': ln,
       'password': password,
-      "alumni": {"department": dept, "batch": batch, "contact": contact},
+      "phone_number": contact,
+      "alumni": {
+        "college": collegeId,
+        "batch": batch,
+        "course": course,
+      },
     };
 
     var response = await http.post(
-      "https://www.alumni-cucek.ml/api/auth/register/",
+      ApiUrl.baseUrl + ApiUrl.endPoint + ApiUrl.alumniReg,
       body: jsonEncode(data),
       headers: {"Content-Type": "application/json"},
     );
-
+    setState(() {
+      _isLoading = false;
+    });
+    print(response.body);
     var jsonData = json.decode(response.body);
-    print(jsonData);
+    //print(jsonData);
     if (response.statusCode == 201) {
+      await SharedStorage().removePreferences();
       setState(
         () {
           _isLoading = false;
@@ -235,7 +238,11 @@ class _SignUpFormState extends State<SignUpForm> {
                           width: 180,
                           child: TextFormField(
                             decoration: InputDecoration(
-                              border: OutlineInputBorder(),
+                              border: OutlineInputBorder(
+                                borderRadius: const BorderRadius.all(
+                                  const Radius.circular(15.0),
+                                ),
+                              ),
                               labelText: 'First Name',
                               prefixIcon: Icon(FontAwesome.user_circle),
                             ),
@@ -250,7 +257,11 @@ class _SignUpFormState extends State<SignUpForm> {
                             padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
                             child: TextFormField(
                               decoration: InputDecoration(
-                                border: OutlineInputBorder(),
+                                border: OutlineInputBorder(
+                                  borderRadius: const BorderRadius.all(
+                                    const Radius.circular(15.0),
+                                  ),
+                                ),
                                 prefixIcon: Icon(FontAwesome.user_circle),
                                 labelText: 'Last Name',
                               ),
@@ -268,7 +279,11 @@ class _SignUpFormState extends State<SignUpForm> {
                     padding: EdgeInsets.fromLTRB(20, 10, 20, 0),
                     child: TextFormField(
                       decoration: InputDecoration(
-                          border: OutlineInputBorder(),
+                          border: OutlineInputBorder(
+                            borderRadius: const BorderRadius.all(
+                              const Radius.circular(15.0),
+                            ),
+                          ),
                           labelText: 'Email',
                           prefixIcon: Icon(Icons.email)),
                       style: TextStyle(fontSize: 12.0, fontFamily: "Roboto"),
@@ -281,7 +296,11 @@ class _SignUpFormState extends State<SignUpForm> {
                     padding: EdgeInsets.fromLTRB(20, 10, 20, 0),
                     child: TextFormField(
                       decoration: InputDecoration(
-                          border: OutlineInputBorder(),
+                          border: OutlineInputBorder(
+                            borderRadius: const BorderRadius.all(
+                              const Radius.circular(15.0),
+                            ),
+                          ),
                           labelText: 'User Name',
                           prefixIcon: Icon(FontAwesome.user)),
                       style: TextStyle(fontSize: 12.0, fontFamily: "Roboto"),
@@ -294,7 +313,11 @@ class _SignUpFormState extends State<SignUpForm> {
                     child: TextFormField(
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                          border: OutlineInputBorder(),
+                          border: OutlineInputBorder(
+                            borderRadius: const BorderRadius.all(
+                              const Radius.circular(15.0),
+                            ),
+                          ),
                           labelText: 'Contact',
                           prefixIcon: Icon(FontAwesome.phone)),
                       style: TextStyle(fontSize: 12.0, fontFamily: "Roboto"),
@@ -302,106 +325,45 @@ class _SignUpFormState extends State<SignUpForm> {
                       controller: contactcontroller,
                     ),
                   ),
-                  Row(
-                    children: <Widget>[
-                      Container(
-                        padding: EdgeInsets.fromLTRB(20, 10, 20, 0),
-                        child: new DropdownButton(
-                          dropdownColor: Colors.grey[200],
-                          items: data.map((item) {
-                            return new DropdownMenuItem(
-                              child: new Text(
-                                item['batch'],
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontFamily: 'OpenSans',
-                                ),
-                              ),
-                              value: item['id'].toString(),
-                            );
-                          }).toList(),
-                          onChanged: (newVal) {
-                            setState(() {
-                              selBatch = newVal;
-                              print(selBatch);
-                            });
-                          },
-                          hint: Text('Choose Batch'),
-                          elevation: 20,
-                          value: selBatch,
-                        ),
-                      ),
-                      Expanded(
-                        child: Container(
-                          padding: EdgeInsets.fromLTRB(20, 10, 20, 0),
-                          child: new DropdownButton(
-                            isDense: true,
-                            dropdownColor: Colors.grey[200],
-                            items: deptData.map((item) {
-                              return new DropdownMenuItem(
-                                child: new Text(
-                                  item['branch'],
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontFamily: 'OpenSans',
-                                  ),
-                                ),
-                                value: item['id'].toString(),
-                              );
-                            }).toList(),
-                            onChanged: (val) {
-                              setState(() {
-                                selDept = val;
-                                print(val);
-                              });
-                            },
-                            hint: Text('Choose Department'),
-                            elevation: 20,
-                            value: selDept,
+                  Container(
+                    padding: EdgeInsets.fromLTRB(30, 10, 20, 0),
+                    child: new DropdownButton(
+                      dropdownColor: Colors.white,
+                      items: data.map((item) {
+                        var batch = item['start'] + ' To ' + item['end'];
+                        return new DropdownMenuItem(
+                          child: new Text(
+                            batch,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xff142850),
+                            ),
                           ),
-                        ),
-                      )
-                    ],
-                  ),
-                  Row(
-                    children: <Widget>[
-                      Container(
-                        padding: EdgeInsets.fromLTRB(20, 10, 0, 10),
-                        child: Text(
-                          'Add Batch',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontFamily: 'OpenSans',
-                          ),
-                        ),
-                      ),
-                      Container(
-                        height: 45,
-                        padding: EdgeInsets.fromLTRB(3, 10, 0, 10),
-                        child: FloatingActionButton(
-                          backgroundColor: Colors.teal[300],
-                          child: Icon(
-                            Icons.add,
-                            size: 15,
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AddBatch(),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
+                          value: item['id'].toString(),
+                        );
+                      }).toList(),
+                      onChanged: (newVal) {
+                        setState(() {
+                          selBatch = newVal;
+                          print(selBatch);
+                        });
+                      },
+                      hint: Text('Choose Batch'),
+                      elevation: 20,
+                      value: selBatch,
+                    ),
                   ),
                   Container(
                     padding: EdgeInsets.fromLTRB(20, 5, 20, 0),
                     child: TextFormField(
                       obscureText: true,
                       decoration: InputDecoration(
-                          border: OutlineInputBorder(),
+                          border: OutlineInputBorder(
+                            borderRadius: const BorderRadius.all(
+                              const Radius.circular(15.0),
+                            ),
+                          ),
                           labelText: 'Password',
                           prefixIcon: Icon(MaterialIcons.security)),
                       validator: passwordValidator,
@@ -414,7 +376,11 @@ class _SignUpFormState extends State<SignUpForm> {
                     child: TextFormField(
                       obscureText: true,
                       decoration: InputDecoration(
-                        border: OutlineInputBorder(),
+                        border: OutlineInputBorder(
+                          borderRadius: const BorderRadius.all(
+                            const Radius.circular(15.0),
+                          ),
+                        ),
                         prefixIcon: Icon(MaterialIcons.security),
                         labelText: 'Confirm Password',
                       ),
@@ -451,7 +417,6 @@ class _SignUpFormState extends State<SignUpForm> {
                                         firstnameController.text,
                                         lastnameController.text,
                                         passwordController.text,
-                                        selDept,
                                         int.parse(selBatch),
                                         contactcontroller.text);
                                   }

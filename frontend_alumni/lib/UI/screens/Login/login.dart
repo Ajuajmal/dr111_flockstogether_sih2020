@@ -44,6 +44,15 @@ class _LoginFormState extends State<LoginForm> {
     setState(() {
       _isLoading = false;
     });
+    if (jsonData['user_type'] == 5) {
+      setState(() {
+        _isLoading = false;
+        Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => BottomBarHome()),
+            (route) => false);
+      });
+    }
     if (jsonData['is_alumni'] == true) {
       print(jsonData['verify_status']);
       if (jsonData['verify_status'] == true) {
@@ -80,6 +89,7 @@ class _LoginFormState extends State<LoginForm> {
     var response = await http
         .post(ApiUrl.baseUrl + ApiUrl.endPoint + ApiUrl.loginApi, body: data);
     var jsonData = json.decode(response.body);
+    print(jsonData);
 
     if (response.statusCode == 200) {
       await storage.write(key: 'accesstoken', value: jsonData['access']);

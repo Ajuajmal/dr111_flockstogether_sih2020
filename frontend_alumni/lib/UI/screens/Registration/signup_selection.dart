@@ -9,8 +9,7 @@ class SignUpSelection extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        body: ListView(
           children: <Widget>[
             Container(
               padding: EdgeInsets.fromLTRB(30, 50, 60, 0),
@@ -63,7 +62,7 @@ class SignUpSelection extends StatelessWidget {
                 ),
                 Column(children: <Widget>[
                   Padding(
-                    padding: EdgeInsets.fromLTRB(10, 100, 0, 0),
+                    padding: EdgeInsets.fromLTRB(0, 100, 0, 0),
                     child: GestureDetector(
                       onTap: () {
                         Navigator.push(
